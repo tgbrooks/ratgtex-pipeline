@@ -2,17 +2,9 @@
 version: "v4"
 
 ## Path to reference genome fasta file ending in .fa
-## I downloaded the FASTA and GTF from RefSeq and converted chromosome names:
-## python3 ../scripts/setup/prepare_refseq.py \
-##     --map sequence_report.tsv \
-##     --gtf-in GCF_036323735.1_GRCr8_genomic.gtf \
-##     --gtf-out GCF_036323735.1_GRCr8_genomic.chr.gtf \
-##     --fasta-in GCF_036323735.1_GRCr8_genomic.fna \
-##     --fasta-out GCF_036323735.1_GRCr8_genomic.chr.fa
-ref_genome: "ref/GCF_036323735.1_GRCr8_genomic.chr.fa"
-
-## Path to reference genome annotation file ending in .gtf
-ref_anno: "ref/GCF_036323735.1_GRCr8_genomic.chr.gtf"
+## I downloaded the FASTA and GTF from Ensembl release 116 and ran `gunzip` on them
+ref_anno: "ref/Rattus_norvegicus.GRCr8.116.gtf"
+ref_geno: "ref/Rattus_norvegicus.GRCr8.dna.toplevel.fa"
 
 ## RatGTEx sample table mapping rat IDs to SRA accessions. Download it, then run
 ## scripts/setup/setup_sra.py to generate each tissue's rat_ids.txt and
