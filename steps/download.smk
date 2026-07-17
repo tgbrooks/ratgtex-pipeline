@@ -28,6 +28,10 @@ rule sra_fastq_paired:
     resources:
         mem_mb = 8000,
         runtime = '8h',
+        # Custom resource limiting concurrent SRA downloads. The total pool
+        # defaults to 3 (set via the Snakemake profile's `resources:` key or
+        # `--resources sra_downloads=N`), so at most 3 of these jobs run at once.
+        sra_downloads = 1,
     shell:
         """
         rm -rf {params.tmp}
@@ -53,6 +57,8 @@ rule sra_fastq_single:
     resources:
         mem_mb = 8000,
         runtime = '8h',
+        # See sra_fastq_paired: limits concurrent SRA downloads (pool default 3).
+        sra_downloads = 1,
     shell:
         """
         rm -rf {params.tmp}

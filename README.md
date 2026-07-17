@@ -63,11 +63,15 @@ set-resources:
     slurm_partition: "our-gpu-partition"
     slurm_account: "our-gpu-account"
     slurm_extra: "'--gres=gpu:1'"
+resources:
+  sra_downloads: 3
 use-conda: true
 latency-wait: 60
 ```
 
 This uses snakemake v8 or higher and the `snakemake-executor-plugin-slurm` plugin. The `tensorqtl` steps should be run on GPU for reasonable runtime, so they are specified by name here to override the default resources. Adjust as needed for your cluster. Additional resources are specified within some of the snakemake rules, which are passed to slurm when those jobs are submitted. Alternatively, you can run snakemake on an interactive node.
+
+The `resources: sra_downloads: 3` line caps concurrent SRA downloads at 3. The `sra_fastq_paired` and `sra_fastq_single` rules each consume `sra_downloads=1`, and this sets the total pool. Change the number to allow more or fewer simultaneous downloads (or override at run time with `--resources sra_downloads=N`). If you run Snakemake without a profile, pass it on the command line, e.g. `snakemake --resources sra_downloads=3 ...`.
 
 #### `config.yaml`
 
