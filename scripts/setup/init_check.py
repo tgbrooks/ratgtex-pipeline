@@ -67,16 +67,28 @@ print("PASS: FASTQ map contains all individuals to be included")
 n_fastq_ids = len(fastqs.keys())
 print(f"INFO: {len(ids)} out of {n_fastq_ids} individuals in FASTQ map will be used")
 
+missing_fastqs = []
 for rat_id in ids:
     paths, paired = fastqs[rat_id]
     for fastq in paths:
         if not fastq.exists():
-            raise FileNotFoundError(f"{fastq} not found")
-print("PASS: All necessary FASTQ files exist")
+            missing_fastqs.append(fastq)
+if missing_fastqs:
+    # FASTQs listed in fastq_map.txt are downloaded from the SRA by the pipeline
+    # (see setup_sra.py / steps/download.smk), so they may not exist yet.
+    print(f"INFO: {len(missing_fastqs)} of the listed FASTQ files do not exist yet; "
+          "they will be downloaded from the SRA when the pipeline runs")
+else:
+    print("PASS: All necessary FASTQ files exist")
 
-vcf = pysam.VariantFile(f"geno/{geno_dataset}.vcf.gz")
-samples = list(vcf.header.samples)
-missing = [id for id in ids if not id in samples]
-if len(missing) > 0:
-    raise ValueError(f"{len(missing)} individuals missing from VCF: {missing}")
-print("PASS: VCF contains all individuals to be included")
+if not Path(f"geno/{geno_dataset}.vcf.gz").exists():
+    # The genotype VCF is downloaded and processed by the pipeline as well.
+    print(f"INFO: geno/{geno_dataset}.vcf.gz does not exist yet; it will be "
+          "downloaded and processed when the pipeline runs")
+else:
+    vcf = pysam.VariantFile(f"geno/{geno_dataset}.vcf.gz")
+    samples = list(vcf.header.samples)
+    missing = [id for id in ids if not id in samples]
+    if len(missing) > 0:
+        raise ValueError(f"{len(missing)} individuals missing from VCF: {missing}")
+    print("PASS: VCF contains all individuals to be included")

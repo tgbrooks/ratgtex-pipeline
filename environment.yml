@@ -1,0 +1,30 @@
+## Conda environment for the RatGTEx pipeline.
+## Create with:  conda env create -n ratgtex --file environment.yml
+##
+## Note: tensorQTL, Pantry, and aFC.py are installed separately (see README).
+name: ratgtex
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python >=3.10
+  - snakemake-minimal >=8
+  # Alignment and BAM/VCF handling
+  - star
+  - samtools
+  - bcftools
+  - htslib          # bgzip, tabix
+  - plink2
+  - plink
+  - gatk4
+  # FASTQ download from the SRA
+  - sra-tools >=3
+  - wget
+  - pigz
+  # Genotype phasing
+  - beagle >=5.4
+  # Python libraries used by scripts
+  - pysam
+  - pandas
+  - numpy
+  - pyyaml

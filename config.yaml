@@ -14,37 +14,58 @@ ref_genome: "ref/GCF_036323735.1_GRCr8_genomic.chr.fa"
 ## Path to reference genome annotation file ending in .gtf
 ref_anno: "ref/GCF_036323735.1_GRCr8_genomic.chr.gtf"
 
+## RatGTEx sample table mapping rat IDs to SRA accessions. Download it, then run
+## scripts/setup/setup_sra.py to generate each tissue's rat_ids.txt and
+## fastq_map.txt so the FASTQs are fetched from the SRA by the pipeline:
+##   wget https://ratgtex.org/data/v4/ref/RatGTEx_samples.v4.tsv
+##   python3 scripts/setup/setup_sra.py --samples RatGTEx_samples.v4.tsv \
+##       --version v4 --tissue Liver
+samples_table: "RatGTEx_samples.v4.tsv"
+
+## Download URL for the unphased genotype VCF of each genotype dataset. These are
+## fetched to geno/original/, REF-corrected against the reference genome, and
+## phased with Beagle by the pipeline.
+geno_url:
+  ratgtex_v4_round11_2: "https://ratgtex.org/data/v4/geno/ratgtex_v4_round11_2.rn8.vcf.gz"
+
+## Optional genetic map (PLINK format) per genotype dataset for Beagle phasing.
+## Without one, Beagle assumes a uniform 1 cM/Mb rate.
+# geno_map:
+#   ratgtex_v4_round11_2: "ref/genetic_map.rn8.txt"
+
 ## All uncommented tissues in this list will be processed.
+## For now only the Liver dataset is run; the other datasets remain configured
+## below and can be re-enabled by uncommenting them here.
 ## For same-tissue datasets, run scripts/setup/setup_merged_tissues.sh before or
 ## after running individual datasets to set up the merged directories. After
 ## running the constituent datasets fully, comment them out here and uncomment
 ## the merged tissue.
 run:
-  ## Singletons:
-  - Adipose
-  - BLA
-  - Brain
-  - Eye
-  - IC
-  - IL
-  - LHb
   - Liver
-  - OFC
-  - RMTg
+  ## Singletons:
+  # - Adipose
+  # - BLA
+  # - Brain
+  # - Eye
+  # - IC
+  # - IL
+  # - LHb
+  # - OFC
+  # - RMTg
   ## Tissues to merge:
-  - NAcc1
-  - NAcc2
-  - NAcc3
-  - NAcc4
-  - PL1
-  - PL2
-  - PL3
-  - pVTA1
-  - pVTA2
+  # - NAcc1
+  # - NAcc2
+  # - NAcc3
+  # - NAcc4
+  # - PL1
+  # - PL2
+  # - PL3
+  # - pVTA1
+  # - pVTA2
   ## Merged tissues:
-  - NAcc
-  - PL
-  - pVTA
+  # - NAcc
+  # - PL
+  # - pVTA
 
 merged_tissues:
   NAcc:
@@ -120,9 +141,11 @@ tissues:
     fastq_path: "fastq/Adipose_Liver/Fat"
     paired_end: false
     geno_dataset: "ratgtex_v4_round11_2"
+  ## Liver FASTQs are downloaded from the SRA into fastq/Liver by the pipeline
+  ## (see setup_sra.py). All Liver samples are paired-end.
   Liver:
     read_length: 126
-    fastq_path: "fastq/Adipose_Liver/Liver"
+    fastq_path: "fastq/Liver"
     paired_end: true
     geno_dataset: "ratgtex_v4_round11_2"
 
