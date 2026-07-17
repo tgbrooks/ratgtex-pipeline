@@ -114,7 +114,7 @@ def write_tissue(version: str, tissue: str, rows: list[dict], no_resolve: bool) 
     for row in rows:
         rat_id = row["rat_id"].strip()
         accession = (row.get("SRA_accession") or "").strip()
-        if not accession:
+        if not accession or accession == "NA":
             print(f"WARNING: {tissue}/{rat_id} has no SRA_accession; skipping", file=sys.stderr)
             continue
 
