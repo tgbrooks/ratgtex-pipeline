@@ -51,3 +51,6 @@ for tissue in TISSUES:
         fastq_path = Path(config["tissues"][tissue]["fastq_path"])
         paired_end = config["tissues"][tissue].get("paired_end", None)
         FASTQ_MAPS[tissue] = load_fastq_map(f"{VERSION}/{tissue}/fastq_map.txt", fastq_path, paired_end)
+
+# Genotype datasets used by the tissues being run (for genotype download/phasing).
+GENO_DATASETS = sorted({config["tissues"][t]["geno_dataset"] for t in TISSUES})

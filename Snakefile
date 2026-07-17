@@ -26,6 +26,7 @@ localrules:
 
 # Alignment, quality control, and expression steps can be found in these files:
 include: "steps/setup.smk"
+include: "steps/download.smk"
 include: "steps/align.smk"
 include: "steps/qc.smk"
 include: "steps/qtl.smk"
@@ -35,6 +36,8 @@ rule all:
     (i.e. without having to specify on command line when running snakemake).
     """
     input:
+        # Phased genotypes for the datasets being run (for downstream analysis):
+        expand("geno/{dataset}.phased.vcf.gz", dataset=GENO_DATASETS),
         expand("{v}/{tissue}/qc/{tissue}.star_stats.tsv", v=VERSION, tissue=TISSUES_SEP),
         # expand("{v}/{tissue}/qc/rna_to_geno_summary.tsv", v=VERSION, tissue=TISSUES_SEP),
         # expand("{v}/{tissue}/qc/all_rats_summary.tsv", v=VERSION, tissue=TISSUES_SEP),
