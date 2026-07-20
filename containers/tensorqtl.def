@@ -1,0 +1,31 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.4.1-cuda12.1-cudnn9-runtime
+
+## GPU container for the tensorQTL rules (tensorqtl_cis_nominal, tensorqtl_trans).
+## Kept separate from bioinfo.sif because it pulls in CUDA + PyTorch, which are
+## large and GPU-specific. These rules are currently disabled in the `all` rule;
+## build this image only when re-enabling QTL mapping, and run those jobs on a
+## GPU node (see the Snakemake profile / run_pipeline.sh).
+##
+## NOTE: untested here — adjust the CUDA tag to match the cluster's driver.
+##
+## Build (see scripts/setup/setup_v4.sh):
+##   apptainer build --ignore-subuid --ignore-fakeroot-command \
+##       images/tensorqtl.sif containers/tensorqtl.def
+
+%post
+    pip install --no-cache-dir \
+        tensorqtl \
+        pandas \
+        numpy \
+        scipy \
+        pyarrow \
+        fastparquet \
+        pandas-plink
+
+%environment
+    export LC_ALL=C.UTF-8
+
+%test
+    python -c "import torch; print('CUDA available:', torch.cuda.is_available())"
+    python -c "import tensorqtl; print('tensorqtl', tensorqtl.__version__)"

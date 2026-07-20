@@ -1,0 +1,47 @@
+Bootstrap: docker
+From: condaforge/miniforge3:24.9.2-0
+
+## General bioinformatics container for the RatGTEx pipeline: alignment, QC,
+## genotype processing, and phasing. Conda runs only at build time inside the
+## image, so the resulting binaries use the container's modern glibc rather than
+## the (old) cluster host's. This replaces `--use-conda` at run time.
+##
+## Build (see scripts/setup/setup_v4.sh):
+##   apptainer build --ignore-subuid --ignore-fakeroot-command \
+##       images/bioinfo.sif containers/bioinfo.def
+
+%post
+    mamba install -y -n base -c conda-forge -c bioconda \
+        star \
+        samtools \
+        bcftools \
+        htslib \
+        plink2 \
+        plink \
+        gatk4 \
+        beagle \
+        wget \
+        python=3.11 \
+        pandas \
+        numpy \
+        scipy \
+        pysam \
+        pyyaml \
+        fastparquet \
+        bx-python
+    mamba clean --all --yes
+
+%environment
+    export PATH=/opt/conda/bin:$PATH
+    export LC_ALL=C.UTF-8
+
+%test
+    # Sanity-check that the key tools are on PATH inside the built image.
+    STAR --version
+    samtools --version | head -1
+    bcftools --version | head -1
+    plink2 --version
+    tabix --version | head -1
+    beagle 2>&1 | head -1 || true
+    gatk --version 2>&1 | head -3 || true
+    python3 -c "import pandas, numpy, scipy, pysam, yaml, fastparquet, bx; print('python libs OK')"

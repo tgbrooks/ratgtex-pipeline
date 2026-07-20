@@ -7,6 +7,8 @@ rule vcf_to_plink:
         multiext("{version}/{tissue}/geno", ".bed", ".bim", ".fam")
     params:
         prefix = "{version}/{tissue}/geno"
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         plink2 --make-bed \
@@ -36,6 +38,8 @@ rule tensorqtl_cis_nominal:
     resources:
         mem_mb = 32000,
         runtime = '12h',
+    container:
+        "images/tensorqtl.sif"
     shell:
         """
         mkdir -p {params.outdir}
@@ -66,6 +70,8 @@ rule tensorqtl_trans:
         mem_mb = lambda w, attempt: 32000 * 2**(attempt-1),
         runtime = '12h',
     retries: 3
+    container:
+        "images/tensorqtl.sif"
     shell:
         # batch_size set due to "RuntimeError: CUDA out of memory"
         """
@@ -92,6 +98,8 @@ rule tensorqtl_all_signif:
     params:
         nom_prefix = "{version}/{tissue}/nominal-{modality}/{tissue}.{modality}",
         groups_arg = lambda w, input: f"--groups {input.groups}" if grouped_modality[w.modality] else "",
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         python3 scripts/tensorqtl_all_signif.py \
@@ -113,6 +121,8 @@ rule tensorqtl_all_cis_pvals:
         nom_prefix = "{version}/{tissue}/nominal-{modality}/{tissue}.{modality}"
     resources:
         mem_mb = 32000,
+    container:
+        "images/bioinfo.sif"
     shell:
         "python3 scripts/tensorqtl_all_cis_pvals.py {params.nom_prefix} {output}"
 
@@ -134,6 +144,8 @@ rule assemble_log_expression:
         bed_iso = "{version}/{tissue}/{tissue}.iso.log2.bed",
     resources:
         mem_mb = 32000,
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         python3 {params.script_path} expression \
@@ -164,6 +176,8 @@ rule aFC:
         "{version}/{tissue}/{tissue}.aFC.tsv"
     resources:
         runtime = '12h'
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         python3 tools/aFC/aFC.py \

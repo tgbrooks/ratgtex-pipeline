@@ -1,7 +1,11 @@
-## Conda environment for the RatGTEx pipeline.
+## Host conda environment for *launching* the RatGTEx pipeline.
 ## Create with:  conda env create -n ratgtex --file environment.yml
 ##
-## Note: tensorQTL, Pantry, and aFC.py are installed separately (see README).
+## This env only needs to run Snakemake itself (pure Python). All bioinformatics
+## tools run inside Apptainer/Singularity containers (see containers/*.def and
+## the `container:` directives on the rules), so they are NOT installed here —
+## this is deliberate, to avoid conda pulling binaries that don't run on the
+## cluster's old glibc. Apptainer itself is expected from the system / a module.
 name: ratgtex
 channels:
   - conda-forge
@@ -9,22 +13,6 @@ channels:
 dependencies:
   - python >=3.10
   - snakemake-minimal >=8
-  # Alignment and BAM/VCF handling
-  - star
-  - samtools
-  - bcftools
-  - htslib          # bgzip, tabix
-  - plink2
-  - plink
-  - gatk4
-  # FASTQ download from the SRA
-  - sra-tools >=3
-  - wget
-  - pigz
-  # Genotype phasing
-  - beagle >=5.4
-  # Python libraries used by scripts
-  - pysam
-  - pandas
-  - numpy
-  - pyyaml
+  # Cluster executor plugin (this repo's run_pipeline.sh uses `--executor lsf`;
+  # swap for snakemake-executor-plugin-slurm on a Slurm cluster).
+  - snakemake-executor-plugin-lsf
