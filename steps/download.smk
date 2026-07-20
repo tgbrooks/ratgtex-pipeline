@@ -20,45 +20,55 @@ wildcard_constraints:
 rule sra_fastq_paired:
     """Download a paired-end SRA run and write gzipped R1/R2 FASTQs."""
     output:
-        r1 = "fastq/{tissue}/{run}_1.fastq.gz",
-        r2 = "fastq/{tissue}/{run}_2.fastq.gz",
-    params:
-        tmp = "fastq/{tissue}/tmp_{run}",
-    threads: 6
+        tmp = temp(directory("fastq/{tissue}/tmp_paired_{run}")),
     resources:
-        mem_mb = 8000,
-        runtime = '8h',
+        mem_mb = 4000,
         # Custom resource limiting concurrent SRA downloads. The total pool
         # defaults to 3 (set via the Snakemake profile's `resources:` key or
         # `--resources sra_downloads=N`), so at most 3 of these jobs run at once.
         sra_downloads = 1,
+    container:
+        "images/sratools.sif"
     shell:
         """
-        rm -rf {params.tmp}
-        mkdir -p {params.tmp}
-        prefetch {wildcards.run} --output-directory {params.tmp} --max-size u
-        fasterq-dump {params.tmp}/{wildcards.run} \
-            --split-3 \
-            --threads {threads} \
-            --outdir {params.tmp}
-        gzip -c {params.tmp}/{wildcards.run}_1.fastq > {output.r1}
-        gzip -c {params.tmp}/{wildcards.run}_2.fastq > {output.r2}
-        rm -rf {params.tmp}
+        rm -rf {output.tmp}
+        mkdir -p {output.tmp}
+        prefetch {wildcards.run} --output-directory {output.tmp} --max-size u
         """
 
-
-rule sra_fastq_single:
-    """Download a single-end SRA run and write a gzipped FASTQ."""
+rule sra_fastq_dump_paired:
+    """fasterq-dump on the prefetched data"""
+    input:
+        tmp = "fastq/{tissue}/tmp_paired_{run}"
     output:
-        "fastq/{tissue}/{run}.fastq.gz",
-    params:
-        tmp = "fastq/{tissue}/tmp_{run}",
+        r1 = "fastq/{tissue}/{run}_1.fastq.gz",
+        r2 = "fastq/{tissue}/{run}_2.fastq.gz",
+    container:
+        "images/sratools.sif"
     threads: 6
     resources:
         mem_mb = 8000,
         runtime = '8h',
+    shell:
+        """
+        fasterq-dump {input.tmp}/{wildcards.run} \
+            --split-3 \
+            --threads {threads} \
+            --outdir {input.tmp}
+        gzip -c {input.tmp}/{wildcards.run}_1.fastq > {output.r1}
+        gzip -c {input.tmp}/{wildcards.run}_2.fastq > {output.r2}
+        """
+
+rule sra_fastq_single:
+    """Download a single-end SRA run and write a gzipped FASTQ."""
+    output:
+        tmp = temp(directory("fastq/{tissue}/tmp_single_{run}")),
+    resources:
+        mem_mb = 4000,
         # See sra_fastq_paired: limits concurrent SRA downloads (pool default 3).
         sra_downloads = 1,
+    container:
+        "images/sratools.sif"
     shell:
         """
         rm -rf {params.tmp}
@@ -70,6 +80,28 @@ rule sra_fastq_single:
             --outdir {params.tmp}
         gzip -c {params.tmp}/{wildcards.run}.fastq > {output}
         rm -rf {params.tmp}
+        """
+
+rule sra_fastq_dump_single:
+    input:
+        tmp = "fastq/{tissue}/tmp_single_{run}"
+    output:
+        "fastq/{tissue}/{run}.fastq.gz",
+    threads: 6
+    resources:
+        mem_mb = 8000,
+        runtime = '8h',
+        # See sra_fastq_paired: limits concurrent SRA downloads (pool default 3).
+        sra_downloads = 1,
+    container:
+        "images/sratools.sif"
+    shell:
+        """
+        fasterq-dump {input.tmp}/{wildcards.run} \
+            --split-3 \
+            --threads {threads} \
+            --outdir {input.tmp}
+        gzip -c {input.tmp}/{wildcards.run}.fastq > {output}
         """
 
 
@@ -108,6 +140,8 @@ rule process_genotypes:
     resources:
         mem_mb = 16000,
         runtime = '4h',
+    conda:
+        "../environment.yml"
     shell:
         """
         mkdir -p geno/intermediate
@@ -154,6 +188,8 @@ rule phase_genotypes:
     resources:
         mem_mb = 32000,
         runtime = '24h',
+    conda:
+        "../environment.yml"
     shell:
         """
         beagle -Xmx{resources.mem_mb}m \

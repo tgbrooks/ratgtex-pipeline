@@ -2,9 +2,9 @@
 version: "v4"
 
 ## Path to reference genome fasta file ending in .fa
-## I downloaded the FASTA and GTF from Ensembl release 116 and ran `gunzip` on them
-ref_anno: "ref/Rattus_norvegicus.GRCr8.116.gtf"
-ref_geno: "ref/Rattus_norvegicus.GRCr8.dna.toplevel.fa"
+# Downloaded in setup_v4.sh
+ref_anno: "ref/GCF_036323735.1_GRCr8_genomic.chr.gtf"
+ref_genome: "ref/GCF_036323735.1_GRCr8_genomic.chr.fa"
 
 ## RatGTEx sample table mapping rat IDs to SRA accessions. Download it, then run
 ## scripts/setup/setup_sra.py to generate each tissue's rat_ids.txt and

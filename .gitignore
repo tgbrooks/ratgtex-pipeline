@@ -6,6 +6,8 @@ geno
 ref
 tools/*
 samples
+logs/
+images/
 slurm-*.out
 v1
 v2
@@ -13,3 +15,5 @@ v3
 v4
 fastq
 RatGTEx_samples.v4.tsv
+.ncbi
+fasterq.tmp*
