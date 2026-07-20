@@ -13,6 +13,8 @@ rule collapse_annotation:
         f"{ANNO_PREFIX}.gtf"
     output:
         f"{ANNO_PREFIX}.genes.gtf"
+    container:
+        "images/bioinfo.sif"
     shell:
         "python3 scripts/setup/collapse_annotation.py {input} {output}"
 
@@ -23,6 +25,8 @@ rule qc_mixups_exon_regions:
         f"{ANNO_PREFIX}.genes.gtf"
     output:
         "ref/exon_regions.tsv.gz"
+    container:
+        "images/bioinfo.sif"
     shell:
         """grep -v '^#' {input} | awk '$3=="exon"' | cut -f1,4,5 | gzip -c > {output}"""
 
@@ -40,6 +44,8 @@ rule qc_mixups_test_snps_vcf:
         vcfi = "{version}/{tissue}/qc/test_snps.vcf.gz.tbi",
     params:
         out_dir = "{version}/{tissue}/qc"
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p {params.out_dir}
@@ -69,6 +75,8 @@ rule qc_mixups_ASEReadCounter:
     resources:
         mem_mb = 16000,
         runtime = '16h'
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p {params.out_dir}
@@ -104,6 +112,8 @@ rule qc_mixups_compare_rna_to_vcf:
     resources:
         runtime = '4h',
         mem_mb = 32000
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         python3 scripts/qc/rna_to_geno_similarity.py \
@@ -136,6 +146,8 @@ rule qc_mixups_compare_to_all_rats:
     resources:
         runtime = '4h',
         mem_mb = 64000
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         python3 scripts/qc/rna_to_geno_all_rats.py \
@@ -155,6 +167,8 @@ rule qc_sex_concordance:
         meta = "geno/genotyping_log.csv",
     output:
         "{version}/{tissue}/qc/{tissue}.sex_concordance.txt",
+    container:
+        "images/bioinfo.sif"
     shell:
         "python3 scripts/qc/sex_concordance.py {input.expr} {input.meta} {output}"
 
@@ -173,6 +187,8 @@ rule qc_star_stats:
         tsv = "{version}/{tissue}/qc/{tissue}.star_stats.tsv",
     params:
         star_dir = "{version}/{tissue}/star_out",
+    container:
+        "images/bioinfo.sif"
     shell:
         "python3 scripts/qc/stats_from_star_logs.py {params.star_dir} {input.samples} {output}"
 

@@ -62,7 +62,6 @@ while read tissue; do
     # norm or unnorm?
     wget -O v4/$tissue/phenos/output/alt_polyA.bed.gz "https://ratgtex.org/data/v4/phenos/phenos.$tissue.alt_polyA.unnorm.v4_rn8.bed.gz"
     wget -O v4/$tissue/pheast/intermediate/covar/alt_polyA.covar.tsv "https://ratgtex.org/data/v4/covar/covar.Liver.alt_polyA.v4.tsv"
-    v4/Liver/pheast/intermediate/covar/alt_polyA.covar.tsv
     tabix -p bed v4/$tissue/phenos/output/alt_polyA.bed.gz
     cp scripts/config_phenos.yml v4/$tissue/phenos/config.yml
     # (Then update read length in config.yml)
@@ -131,3 +130,12 @@ done <tissues.dup.txt
 # and it also breaks the fakeroot command, so we have to disable that while building it
 mkdir -p images/
 apptainer build --ignore-subuid --ignore-fakeroot-command images/sratools.sif containers/sratools.def
+
+# General bioinformatics container (STAR, samtools, bcftools, htslib, plink2,
+# plink, gatk4, beagle, python + libs) used by the alignment, QC, genotype
+# processing, and phasing rules. Replaces the conda environment.
+apptainer build --ignore-subuid --ignore-fakeroot-command images/bioinfo.sif containers/bioinfo.def
+
+# GPU container for the tensorQTL rules. Only needed when the QTL steps are
+# re-enabled in the Snakefile; build on a machine set up for the target CUDA.
+# apptainer build --ignore-subuid --ignore-fakeroot-command images/tensorqtl.sif containers/tensorqtl.def

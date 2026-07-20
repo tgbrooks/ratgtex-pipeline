@@ -13,16 +13,37 @@ The main steps of the pipeline are:
 
 ## Setup
 
-### Conda environment
+### Conda environment (for launching Snakemake only)
 
 Install a conda-like package manager (I recommend [miniforge](https://github.com/conda-forge/miniforge)) and add the bioconda channel.
 
-Create the ratgtex environment:
+Create the ratgtex environment, which only needs to run Snakemake itself:
 
 ```shell
 conda env create -n ratgtex --file environment.yml
 conda activate ratgtex
 ```
+
+All of the actual bioinformatics tools run inside containers (below), not from this environment.
+
+### Containers
+
+The pipeline runs its tools inside [Apptainer](https://apptainer.org/) (formerly Singularity) images rather than a conda environment, which avoids conda pulling binaries that don't run on an older cluster's glibc. The container definitions are in `containers/`:
+
+- `sratools.def` — the SRA Toolkit (`prefetch`, `fasterq-dump`) for downloading FASTQs.
+- `bioinfo.def` — general tools for alignment, QC, genotype processing, and phasing: STAR, samtools, bcftools, htslib (`tabix`/`bgzip`), plink2, plink, gatk4, Beagle, and Python with pandas/numpy/scipy/pysam/pyyaml/fastparquet/bx-python.
+- `tensorqtl.def` — a GPU (CUDA/PyTorch) image for the tensorQTL rules. Only needed when the QTL steps are re-enabled; build it on a machine matching the target CUDA version.
+
+Build the images (this is also done in `scripts/setup/setup_v4.sh`):
+
+```shell
+mkdir -p images
+apptainer build --ignore-subuid --ignore-fakeroot-command images/sratools.sif containers/sratools.def
+apptainer build --ignore-subuid --ignore-fakeroot-command images/bioinfo.sif containers/bioinfo.def
+# apptainer build --ignore-subuid --ignore-fakeroot-command images/tensorqtl.sif containers/tensorqtl.def
+```
+
+Each rule has a `container:` directive pointing at one of `images/*.sif`, so run Snakemake with `--use-singularity` (as in `run_pipeline.sh`). Do not pass `--use-conda` — the two aren't combined here. Bind any paths the jobs need to read/write with `--singularity-args "-B /your/path"`.
 
 ### Other software
 
@@ -65,7 +86,7 @@ set-resources:
     slurm_extra: "'--gres=gpu:1'"
 resources:
   sra_downloads: 3
-use-conda: true
+use-singularity: true
 latency-wait: 60
 ```
 

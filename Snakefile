@@ -5,9 +5,10 @@ def ids(tissue):
     """Load list of rat IDs for a tissue dataset."""
     with open(f"{VERSION}/{tissue}/rat_ids.txt", "r") as f:
         ids1 = f.read().splitlines()
-    # Only use IDs that mapped to fastq files
+    # Only use IDs that mapped to fastq files. The rat ID is the last column
+    # (single-end rows have 2 columns, paired-end rows have 3).
     with open(f"{VERSION}/{tissue}/fastq_map.txt", "r") as f:
-        ids2 = [l.split("\t")[2] for l in f.read().splitlines()]
+        ids2 = [l.split("\t")[-1] for l in f.read().splitlines()]
     return sorted(list(set(ids1).intersection(ids2)))
 
 

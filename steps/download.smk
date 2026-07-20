@@ -60,7 +60,7 @@ rule sra_fastq_dump_paired:
         """
 
 rule sra_fastq_single:
-    """Download a single-end SRA run and write a gzipped FASTQ."""
+    """Prefetch a single-end SRA run (download step; see sra_fastq_dump_single)."""
     output:
         tmp = temp(directory("fastq/{tissue}/tmp_single_{run}")),
     resources:
@@ -71,18 +71,13 @@ rule sra_fastq_single:
         "images/sratools.sif"
     shell:
         """
-        rm -rf {params.tmp}
-        mkdir -p {params.tmp}
-        prefetch {wildcards.run} --output-directory {params.tmp} --max-size u
-        fasterq-dump {params.tmp}/{wildcards.run} \
-            --split-3 \
-            --threads {threads} \
-            --outdir {params.tmp}
-        gzip -c {params.tmp}/{wildcards.run}.fastq > {output}
-        rm -rf {params.tmp}
+        rm -rf {output.tmp}
+        mkdir -p {output.tmp}
+        prefetch {wildcards.run} --output-directory {output.tmp} --max-size u
         """
 
 rule sra_fastq_dump_single:
+    """fasterq-dump on the prefetched single-end data."""
     input:
         tmp = "fastq/{tissue}/tmp_single_{run}"
     output:
@@ -91,8 +86,6 @@ rule sra_fastq_dump_single:
     resources:
         mem_mb = 8000,
         runtime = '8h',
-        # See sra_fastq_paired: limits concurrent SRA downloads (pool default 3).
-        sra_downloads = 1,
     container:
         "images/sratools.sif"
     shell:
@@ -115,6 +108,8 @@ rule download_genotypes:
         url = lambda w: config["geno_url"][w.geno_dataset],
     resources:
         runtime = '4h',
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p geno/original
@@ -140,8 +135,8 @@ rule process_genotypes:
     resources:
         mem_mb = 16000,
         runtime = '4h',
-    conda:
-        "../environment.yml"
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p geno/intermediate
@@ -188,8 +183,8 @@ rule phase_genotypes:
     resources:
         mem_mb = 32000,
         runtime = '24h',
-    conda:
-        "../environment.yml"
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         beagle -Xmx{resources.mem_mb}m \

@@ -18,6 +18,8 @@ rule star_index:
     resources:
         mem_mb = 60000,
         runtime = '4h'
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p {params.outdir}
@@ -42,6 +44,8 @@ rule individual_vcf:
         "geno/individual/{geno_dataset}/{rat_id}.vcf.gz"
     params:
         outdir = "geno/individual/{geno_dataset}"
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p {params.outdir}
@@ -108,6 +112,8 @@ rule star_align:
     resources:
         mem_mb = 60000,
         runtime = '8h'
+    container:
+        "images/bioinfo.sif"
     shell:
         """
         mkdir -p {params.out_dir}
@@ -137,6 +143,8 @@ rule index_bam:
     params:
         add_threads = 8 - 1,
     threads: 8
+    container:
+        "images/bioinfo.sif"
     shell:
         # It expects the number of *additional* threads to use beyond the first.
         """
