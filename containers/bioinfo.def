@@ -11,7 +11,14 @@ From: condaforge/miniforge3:24.9.2-0
 ##       images/bioinfo.sif containers/bioinfo.def
 
 %post
+    # Install everything into the base env in one transaction. `libxml2` is
+    # listed explicitly because mamba's own libmambapy loads libxml2.so.2 at
+    # runtime: without pinning it, the bioconda packages can perturb the
+    # conda-provided libxml2 mid-install, and the subsequent `mamba clean` then
+    # fails with "libxml2.so.2: cannot open shared object file". Keeping it in
+    # the resolved env guarantees the library is present afterward.
     mamba install -y -n base -c conda-forge -c bioconda \
+        libxml2 \
         star \
         samtools \
         bcftools \
