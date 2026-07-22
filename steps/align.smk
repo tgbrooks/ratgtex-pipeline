@@ -39,7 +39,7 @@ rule individual_vcf:
     This is used by STAR to consider the individual's variants for better alignment.
     """
     input:
-        "geno/{geno_dataset}.vcf.gz"
+        "geno/{geno_dataset}.phased.vcf.gz"
     output:
         "geno/individual/{geno_dataset}/{rat_id}.vcf.gz"
     params:
