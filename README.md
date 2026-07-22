@@ -13,18 +13,10 @@ The main steps of the pipeline are:
 
 ## Setup
 
-### Conda environment (for launching Snakemake only)
+### Prerequisites
 
-Install a conda-like package manager (I recommend [miniforge](https://github.com/conda-forge/miniforge)) and add the bioconda channel.
-
-Create the ratgtex environment, which only needs to run Snakemake itself:
-
-```shell
-conda env create -n ratgtex --file environment.yml
-conda activate ratgtex
-```
-
-All of the actual bioinformatics tools run inside containers (below), not from this environment.
+[Install `uv`.](https://docs.astral.sh/uv/getting-started/installation/)
+Your system is expected to have apptainer to build and run the containers.
 
 ### Containers
 
