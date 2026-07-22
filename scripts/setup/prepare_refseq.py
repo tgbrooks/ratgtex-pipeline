@@ -28,7 +28,9 @@ def load_mapping(mapping_file: str) -> tuple[dict[str, str], set[str]]:
     return mapping, allowed_accessions
 
 
-def process_gtf(input_gtf: str, output_gtf: str, mapping: dict, allowed_accessions: set[str]) -> None:
+def process_gtf(
+    input_gtf: str, output_gtf: str, mapping: dict, allowed_accessions: set[str]
+) -> None:
     """Update the first column (seqname) using the mapping, keeping only
     rows whose RefSeq accession has Role == 'assembled-molecule'."""
     with open(input_gtf) as gtf_in, open(output_gtf, "w") as gtf_out:
@@ -78,22 +80,31 @@ def process_fasta(input_fasta: str, output_fasta: str, mapping: dict) -> None:
             else:
                 fout.write(line)
 
+
 def main():
     parser = argparse.ArgumentParser(
         description="Convert RefSeq accessions to chromosome names in GTF and optionally FASTA files"
     )
-    parser.add_argument('--map', help='Tab-delimited file mapping RefSeq accessions to sequence names')
-    parser.add_argument('--gtf-in', help='Input GTF file with RefSeq accessions')
-    parser.add_argument('--gtf-out', help='Output GTF file with chromosome names')
-    parser.add_argument('--fasta-in', help='Input reference genome FASTA with RefSeq accessions in headers')
-    parser.add_argument('--fasta-out', help='Output FASTA with chromosome names in headers')
-    
+    parser.add_argument(
+        "--map", help="Tab-delimited file mapping RefSeq accessions to sequence names"
+    )
+    parser.add_argument("--gtf-in", help="Input GTF file with RefSeq accessions")
+    parser.add_argument("--gtf-out", help="Output GTF file with chromosome names")
+    parser.add_argument(
+        "--fasta-in",
+        help="Input reference genome FASTA with RefSeq accessions in headers",
+    )
+    parser.add_argument(
+        "--fasta-out", help="Output FASTA with chromosome names in headers"
+    )
+
     args = parser.parse_args()
 
     mapping, allowed_accessions = load_mapping(args.map)
     process_gtf(args.gtf_in, args.gtf_out, mapping, allowed_accessions)
     if args.fasta_in and args.fasta_out:
         process_fasta(args.fasta_in, args.fasta_out, mapping)
+
 
 if __name__ == "__main__":
     main()
