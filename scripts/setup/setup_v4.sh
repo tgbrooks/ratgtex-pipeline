@@ -134,7 +134,7 @@ apptainer build --ignore-subuid --ignore-fakeroot-command images/sratools.sif co
 # General bioinformatics container (STAR, samtools, bcftools, htslib, plink2,
 # plink, gatk4, beagle, python + libs) used by the alignment, QC, genotype
 # processing, and phasing rules. Replaces the conda environment.
-apptainer build --ignore-subuid --ignore-fakeroot-command images/bioinfo.sif containers/bioinfo.def
+apptainer build images/bioinfo.sif containers/bioinfo.def
 
 # GPU container for the tensorQTL rules. Only needed when the QTL steps are
 # re-enabled in the Snakefile; build on a machine set up for the target CUDA.
