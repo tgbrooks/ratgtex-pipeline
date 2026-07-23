@@ -15,6 +15,9 @@ wildcard_constraints:
     # Genotype dataset names contain no dots or slashes, so this does not match
     # the ".phased" or "original/" paths below.
     geno_dataset = r"[A-Za-z0-9_]+",
+    # Chromosome names, e.g. chr1..chr20. Non-empty so the per-chromosome phased
+    # VCF pattern doesn't match the concatenated final one.
+    chrom = r"chr[0-9]+",
 
 
 rule sra_fastq_paired:
@@ -161,36 +164,60 @@ rule process_genotypes:
         """
 
 
-rule phase_genotypes:
-    """Phase genotypes with Beagle (reference-free / population phasing).
-    An optional genetic map per dataset can be given in config.yaml under
-    `geno_map`; without one Beagle assumes 1 cM/Mb.
+rule phase_genotypes_chrom:
+    """Phase a single chromosome with Beagle (reference-free / population phasing).
+    Parallelized across chromosomes; the per-chromosome outputs are temporary
+    and concatenated by phase_genotypes. An optional genetic map per dataset can
+    be given in config.yaml under `geno_map`; without one Beagle assumes 1 cM/Mb.
     """
     input:
         vcf = "geno/{geno_dataset}.vcf.gz",
         tbi = "geno/{geno_dataset}.vcf.gz.tbi",
     output:
-        vcf = "geno/{geno_dataset}.phased.vcf.gz",
-        tbi = "geno/{geno_dataset}.phased.vcf.gz.tbi",
+        vcf = temp("geno/intermediate/{geno_dataset}.phased.{chrom}.vcf.gz"),
     params:
-        out_prefix = "geno/{geno_dataset}.phased",
+        out_prefix = "geno/intermediate/{geno_dataset}.phased.{chrom}",
         map_arg = lambda w: (
             f"map={config['geno_map'][w.geno_dataset]}"
             if config.get("geno_map", {}).get(w.geno_dataset)
             else ""
         ),
-    threads: 8
+    threads: 4
     resources:
-        mem_mb = 32000,
-        runtime = '24h',
+        mem_mb = 16000,
+        runtime = '12h',
     container:
         "images/bioinfo.sif"
     shell:
         """
+        mkdir -p geno/intermediate
         beagle -Xmx{resources.mem_mb}m \
             gt={input.vcf} \
+            chrom={wildcards.chrom} \
             out={params.out_prefix} \
             nthreads={threads} \
             {params.map_arg}
+        """
+
+
+rule phase_genotypes:
+    """Concatenate the per-chromosome phased VCFs into the final phased VCF."""
+    input:
+        chroms = lambda w: expand(
+            "geno/intermediate/{geno_dataset}.phased.{chrom}.vcf.gz",
+            geno_dataset=w.geno_dataset,
+            chrom=CHROMS,
+        ),
+    output:
+        vcf = "geno/{geno_dataset}.phased.vcf.gz",
+        tbi = "geno/{geno_dataset}.phased.vcf.gz.tbi",
+    resources:
+        mem_mb = 8000,
+        runtime = '4h',
+    container:
+        "images/bioinfo.sif"
+    shell:
+        """
+        bcftools concat -Oz -o {output.vcf} {input.chroms}
         tabix -f -p vcf {output.vcf}
         """

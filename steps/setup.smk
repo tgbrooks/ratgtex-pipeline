@@ -54,3 +54,7 @@ for tissue in TISSUES:
 
 # Genotype datasets used by the tissues being run (for genotype download/phasing).
 GENO_DATASETS = sorted({config["tissues"][t]["geno_dataset"] for t in TISSUES})
+
+# Autosomes present in the genotypes (chr1..chr20; the VCF has no X/Y/MT).
+# Phasing is parallelized across these and then concatenated.
+CHROMS = [f"chr{i}" for i in range(1, 21)]
