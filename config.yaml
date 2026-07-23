@@ -20,10 +20,8 @@ samples_table: "RatGTEx_samples.v4.tsv"
 geno_url:
   ratgtex_v4_round11_2: "https://ratgtex.org/data/v4/geno/ratgtex_v4_round11_2.rn8.vcf.gz"
 
-## Optional genetic map (PLINK format) per genotype dataset for Beagle phasing.
-## Without one, Beagle assumes a uniform 1 cM/Mb rate.
-# geno_map:
-#   ratgtex_v4_round11_2: "ref/genetic_map.rn8.txt"
+## Beagle phasing uses a uniform genetic map of 0.66 cM/Mb, generated per
+## chromosome by the genetic_map_chrom rule (we have no rat-specific map).
 
 ## All uncommented tissues in this list will be processed.
 ## For now only the Liver dataset is run; the other datasets remain configured
