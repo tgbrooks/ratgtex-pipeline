@@ -15,6 +15,9 @@ wildcard_constraints:
     # Genotype dataset names contain no dots or slashes, so this does not match
     # the ".phased" or "original/" paths below.
     geno_dataset = r"[A-Za-z0-9_]+",
+    # Chromosome names, e.g. chr1..chr20. Non-empty so the per-chromosome phased
+    # VCF pattern doesn't match the concatenated final one.
+    chrom = r"chr[0-9]+",
 
 
 rule sra_fastq_paired:
@@ -161,36 +164,89 @@ rule process_genotypes:
         """
 
 
-rule phase_genotypes:
-    """Phase genotypes with Beagle (reference-free / population phasing).
-    An optional genetic map per dataset can be given in config.yaml under
-    `geno_map`; without one Beagle assumes 1 cM/Mb.
+rule genetic_map_chrom:
+    """Build a uniform genetic map for one chromosome for Beagle.
+
+    We have no rat genetic map, so use a constant recombination rate of
+    0.66 cM/Mb. The PLINK map format is `chrom  marker  cM  bp`; two points per
+    chromosome (bp 1 at 0 cM, and the contig length at length*rate cM) give
+    Beagle a linear map, so every marker gets the constant rate by interpolation.
+    The contig length is read from the VCF's ##contig header.
     """
     input:
         vcf = "geno/{geno_dataset}.vcf.gz",
         tbi = "geno/{geno_dataset}.vcf.gz.tbi",
     output:
-        vcf = "geno/{geno_dataset}.phased.vcf.gz",
-        tbi = "geno/{geno_dataset}.phased.vcf.gz.tbi",
+        temp("geno/intermediate/{geno_dataset}.{chrom}.uniform.map"),
     params:
-        out_prefix = "geno/{geno_dataset}.phased",
-        map_arg = lambda w: (
-            f"map={config['geno_map'][w.geno_dataset]}"
-            if config.get("geno_map", {}).get(w.geno_dataset)
-            else ""
-        ),
-    threads: 8
+        rate = 0.00000066,  # 0.66 cM/Mb, expressed as cM per bp
+    container:
+        "images/bioinfo.sif"
+    shell:
+        r"""
+        mkdir -p geno/intermediate
+        len=$(bcftools view -h {input.vcf} \
+            | sed -nE 's/^##contig=<ID={wildcards.chrom},length=([0-9]+).*/\1/p')
+        if [ -z "$len" ]; then
+            echo "ERROR: no ##contig length for {wildcards.chrom} in {input.vcf}" >&2
+            exit 1
+        fi
+        cm=$(awk -v l="$len" -v r={params.rate} 'BEGIN {{ printf "%.6f", l * r }}')
+        printf "%s\t.\t0.0\t1\n%s\t.\t%s\t%s\n" \
+            {wildcards.chrom} {wildcards.chrom} "$cm" "$len" > {output}
+        """
+
+
+rule phase_genotypes_chrom:
+    """Phase a single chromosome with Beagle (reference-free / population phasing).
+    Parallelized across chromosomes; the per-chromosome outputs are temporary
+    and concatenated by phase_genotypes. Uses a uniform 0.66 cM/Mb genetic map
+    (see genetic_map_chrom).
+    """
+    input:
+        vcf = "geno/{geno_dataset}.vcf.gz",
+        tbi = "geno/{geno_dataset}.vcf.gz.tbi",
+        gmap = "geno/intermediate/{geno_dataset}.{chrom}.uniform.map",
+    output:
+        vcf = temp("geno/intermediate/{geno_dataset}.phased.{chrom}.vcf.gz"),
+    params:
+        out_prefix = "geno/intermediate/{geno_dataset}.phased.{chrom}",
+    threads: 4
     resources:
-        mem_mb = 32000,
-        runtime = '24h',
+        mem_mb = 16000,
+        runtime = '12h',
     container:
         "images/bioinfo.sif"
     shell:
         """
+        mkdir -p geno/intermediate
         beagle -Xmx{resources.mem_mb}m \
             gt={input.vcf} \
+            chrom={wildcards.chrom} \
+            map={input.gmap} \
             out={params.out_prefix} \
-            nthreads={threads} \
-            {params.map_arg}
+            nthreads={threads}
+        """
+
+
+rule phase_genotypes:
+    """Concatenate the per-chromosome phased VCFs into the final phased VCF."""
+    input:
+        chroms = lambda w: expand(
+            "geno/intermediate/{geno_dataset}.phased.{chrom}.vcf.gz",
+            geno_dataset=w.geno_dataset,
+            chrom=CHROMS,
+        ),
+    output:
+        vcf = "geno/{geno_dataset}.phased.vcf.gz",
+        tbi = "geno/{geno_dataset}.phased.vcf.gz.tbi",
+    resources:
+        mem_mb = 8000,
+        runtime = '4h',
+    container:
+        "images/bioinfo.sif"
+    shell:
+        """
+        bcftools concat -Oz -o {output.vcf} {input.chroms}
         tabix -f -p vcf {output.vcf}
         """
